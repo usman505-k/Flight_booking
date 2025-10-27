@@ -16,10 +16,11 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('flightCount', 'bookingCount'));
     }
 
-    // Flights list
+    // Flights list (show all including canceled)
     public function index()
     {
-        $flights = Flight::all();
+        // Admin sees all flights
+        $flights = Flight::orderByDesc('departure_date')->get();
         return view('admin.flights.index', compact('flights'));
     }
 
@@ -50,41 +51,65 @@ class AdminController extends Controller
             'departure_time',
             'price',
             'seats'
-        ]));
+        ]) + ['status' => 'active']);
 
         return redirect()->route('admin.flights')->with('success', 'Flight added!');
     }
 
-    // Admin bookings list (with flights for update select)
-  public function bookings()
-{
-    $bookings = Booking::with(['flight','user'])->orderByDesc('created_at')->get();
-    return view('admin.bookings', compact('bookings'));
-}
-
-// Delete booking and restore seats
-public function deleteBooking($id)
-{
-    $booking = Booking::findOrFail($id);
-    $flight = Flight::find($booking->flight_id);
-
-    if ($flight) {
-        $flight->seats += $booking->seats_booked;
+    // Cancel a flight (soft cancel)
+    public function cancelFlight($id)
+    {
+        $flight = Flight::findOrFail($id);
+        $flight->status = 'canceled';
         $flight->save();
+
+        return redirect()->route('admin.flights')->with('success', 'Flight canceled. It will be hidden from users.');
     }
 
-    $booking->delete();
-    return redirect()->route('admin.bookings')->with('success', 'Booking deleted & seats restored.');
-}
+    // Restore a canceled flight back to active
+    public function restoreFlight($id)
+    {
+        $flight = Flight::findOrFail($id);
+        $flight->status = 'active';
+        $flight->save();
 
-// Mark booking as Success
-public function markSuccess($id)
-{
-    $booking = Booking::findOrFail($id);
-    $booking->status = 'Success';
-    $booking->save();
+        return redirect()->route('admin.flights')->with('success', 'Flight restored to active.');
+    }
 
-    return redirect()->route('admin.bookings')->with('success', 'Booking marked as Success.');
-}
+    // Admin bookings list (with flights for update select)
+    public function bookings()
+    {
+        $bookings = Booking::with(['flight','user'])->orderByDesc('created_at')->get();
+        $flights = Flight::orderBy('departure_date')->get();
+        return view('admin.bookings', compact('bookings','flights'));
+    }
 
+    // Delete booking and restore seats to flight
+    public function deleteBooking($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        $oldFlight = Flight::find($booking->flight_id);
+        if ($oldFlight) {
+            if (method_exists($oldFlight, 'increaseSeats')) {
+                $oldFlight->increaseSeats($booking->seats_booked);
+            } else {
+                $oldFlight->seats += $booking->seats_booked;
+                $oldFlight->save();
+            }
+        }
+
+        $booking->delete();
+        return redirect()->route('admin.bookings')->with('success','Booking deleted and seats restored.');
+    }
+
+    // Mark booking as Success
+    public function markSuccess($id)
+    {
+        $booking = Booking::findOrFail($id);
+        $booking->status = 'Success';
+        $booking->save();
+
+        return redirect()->route('admin.bookings')->with('success','Booking marked as Success.');
+    }
 }

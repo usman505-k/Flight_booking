@@ -1,24 +1,28 @@
 @extends('layouts.app')
 
 @section('content')
-<h2>Flight Details</h2>
+<div class="container py-4">
+    <div class="card">
+        <div class="card-body">
+            <h3>{{ $flight->flight_number }} — {{ $flight->origin }} → {{ $flight->destination }}</h3>
+            <p>📅 <strong>Date:</strong> {{ $flight->departure_date }}</p>
+            <p>⏰ <strong>Time:</strong> {{ $flight->departure_time }}</p>
+            <p>💺 <strong>Seats Available:</strong> {{ $flight->seats }}</p>
+            <p>💲 <strong>Price:</strong> ${{ number_format($flight->price,2) }}</p>
 
-<div class="card p-3">
-    <p><strong>From:</strong> {{ $flight->departure }}</p>
-    <p><strong>To:</strong> {{ $flight->destination }}</p>
-    <p><strong>Date:</strong> {{ $flight->date }}</p>
-    <p><strong>Seats:</strong> {{ $flight->seats }}</p>
-    <p><strong>Price:</strong> ${{ $flight->price }}</p>
+            @auth
+                <form action="{{ route('bookings.store', $flight->id) }}" method="POST">
+                    @csrf
+                    <div class="mb-2">
+                        <label>Seats to book</label>
+                        <input type="number" name="seats" class="form-control" min="1" max="{{ $flight->seats }}" value="1" required>
+                    </div>
+                    <button class="btn btn-success">Confirm Booking</button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="btn btn-primary">Login to Book</a>
+            @endauth
+        </div>
+    </div>
 </div>
-
-@auth
-<form action="{{ route('bookings.store', $flight->id) }}" method="POST" class="mt-3">
-    @csrf
-    <button class="btn btn-success">Book This Flight</button>
-</form>
-@else
-<div class="alert alert-info mt-3">
-    Please <a href="{{ route('login') }}">login</a> to book this flight.
-</div>
-@endauth
 @endsection

@@ -19,11 +19,7 @@ Route::get('/flights/{id}', [FlightController::class,'show'])->name('flights.sho
 Route::middleware('auth')->group(function () {
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::post('/bookings/{flightId}', [BookingController::class, 'store'])->name('bookings.store');
-
-    // ✅ FIXED ROUTE — using cancel() instead of destroy()
     Route::delete('/bookings/{id}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
-
-    Route::post('/bookings/{id}/update', [BookingController::class, 'update'])->name('bookings.update');
 });
 
 // ADMIN (auth + admin middleware)
@@ -35,7 +31,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/flights/create', [AdminController::class, 'createFlight'])->name('admin.flights.create');
     Route::post('/admin/flights', [AdminController::class, 'store'])->name('admin.flights.store');
 
-    // Bookings admin (NO UPDATE)
+    // Cancel / restore flights (soft cancel)
+    Route::post('/admin/flights/{id}/cancel', [AdminController::class, 'cancelFlight'])->name('admin.flights.cancel');
+    Route::post('/admin/flights/{id}/restore', [AdminController::class, 'restoreFlight'])->name('admin.flights.restore');
+
+    // Admin bookings (no update)
     Route::get('/admin/bookings', [AdminController::class, 'bookings'])->name('admin.bookings');
     Route::delete('/admin/bookings/{id}', [AdminController::class, 'deleteBooking'])->name('admin.bookings.delete');
     Route::post('/admin/bookings/{id}/success', [AdminController::class, 'markSuccess'])->name('admin.bookings.success');

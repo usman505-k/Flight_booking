@@ -17,6 +17,7 @@ class Flight extends Model
         'departure_time',
         'price',
         'seats',
+        'status', // added
     ];
 
     public function bookings()
@@ -40,5 +41,17 @@ class Flight extends Model
     {
         $this->seats += $count;
         $this->save();
+    }
+
+    // Helper: is canceled?
+    public function isCanceled(): bool
+    {
+        return $this->status === 'canceled';
+    }
+
+    // Scope: only active flights
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
     }
 }

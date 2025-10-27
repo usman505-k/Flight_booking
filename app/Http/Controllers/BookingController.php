@@ -17,30 +17,29 @@ class BookingController extends Controller
     }
 
     // Store a new booking (user-side)
-    public function store(Request $request, $flightId)
+   public function store(Request $request, $flightId)
     {
         $request->validate([
             'seats' => 'required|integer|min:1',
         ]);
 
         $flight = Flight::findOrFail($flightId);
-        $seats = (int)$request->seats;
+
+        if ($flight->isCanceled()) {
+            return redirect()->route('flights.index')->with('error', 'Cannot book a canceled flight.');
+        }
+
+        $seats = (int) $request->input('seats', 1);
 
         if ($flight->seats < $seats) {
-            return back()->with('error', 'Not enough seats available.');
+            return redirect()->back()->with('error', 'Not enough seats available.');
         }
 
         // reduce seats
-        if (method_exists($flight, 'reduceSeats')) {
-            $ok = $flight->reduceSeats($seats);
-            if (!$ok) return back()->with('error', 'Not enough seats available.');
-        } else {
-            $flight->seats -= $seats;
-            $flight->save();
-        }
+        $flight->seats -= $seats;
+        $flight->save();
 
-        // create booking
-        Booking::create([
+        $booking = Booking::create([
             'user_id' => Auth::id(),
             'flight_id' => $flight->id,
             'seats_booked' => $seats,
@@ -48,7 +47,7 @@ class BookingController extends Controller
             'status' => 'Pending',
         ]);
 
-        return redirect()->route('bookings.index')->with('success', 'Booking created!');
+        return redirect()->route('bookings.index')->with('success', 'Booking confirmed!');
     }
 
 
