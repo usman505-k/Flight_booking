@@ -7,6 +7,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Auth;
 
+// Home Page
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Auth::routes();
@@ -40,5 +41,3 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('/admin/bookings/{id}', [AdminController::class, 'deleteBooking'])->name('admin.bookings.delete');
     Route::post('/admin/bookings/{id}/success', [AdminController::class, 'markSuccess'])->name('admin.bookings.success');
 });
-
-Route::get('/home', [HomeController::class, 'index'])->name('home');
